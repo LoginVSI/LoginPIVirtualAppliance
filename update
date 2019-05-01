@@ -1,6 +1,7 @@
 #!/bin/bash
 [[ $(echo "$1" | tr '[:upper:]' '[:lower:]') == "offline" ]] && offline=true
 [[ $(echo "$1" | tr '[:upper:]' '[:lower:]') == "internal" ]] && internal=true
+[[ $(echo "$1" | tr '[:upper:]' '[:lower:]') == "recurse" ]] && recurse=true
 
 
 cd /loginvsi
@@ -31,8 +32,9 @@ while read -r repo branch hostingfolder; do
                 echo "Failed to connect to hub.docker.com, make sure the appliance can access hub.docker.com"
                 exit
             fi
-            
-            echo "Performing online update from $repo" 
+            if [ -z $recurse ]; then
+                echo "Performing online update from $repo" 
+            fi
             git clone -q -b "$branch" "$repo" /loginvsi/hosting;
         fi
     else
@@ -42,22 +44,28 @@ while read -r repo branch hostingfolder; do
     if [ ! -f /loginvsi/hosting/$hostingfolder/docker-compose.yml ]; then 
 		echo "Cloning hosting repo has failed, unable to continue update, please contact support@loginvsi.com"
 		exit 1
-	fi 
-    currentversion=$(grep "Version__Number" < /loginvsi/docker-compose.yml | cut -d':' -f2 | cut -d"'" -f2 | tail -1)    
-    newversion=$(grep "Version__Number" < /loginvsi/hosting/$hostingfolder/docker-compose.yml | cut -d':' -f2 | cut -d"'" -f2 | tail -1)
-    echo "This appliance is going to be updated to the latest version. Please make sure you have a backup of the system and data before proceeding."
-    read -rep "Are you sure you want to update from $currentversion to $newversion [y/N]: " PROCEED </dev/tty
-    DEFAULT="n"
-    PROCEED="${PROCEED:-${DEFAULT}}"
-    # convert to lowercase
-    PROCEED="${PROCEED,,,}"       
+	fi
+    if [ -z $recurse ]; then 
+        currentversion=$(grep "Version__Number" < /loginvsi/docker-compose.yml | cut -d':' -f2 | cut -d"'" -f2 | tail -1)    
+        newversion=$(grep "Version__Number" < /loginvsi/hosting/$hostingfolder/docker-compose.yml | cut -d':' -f2 | cut -d"'" -f2 | tail -1)
+        echo "This appliance is going to be updated to the latest version. Please make sure you have a backup of the system and data before proceeding."
+        read -rep "Are you sure you want to update from $currentversion to $newversion [y/N]: " PROCEED </dev/tty
+        DEFAULT="n"
+        PROCEED="${PROCEED:-${DEFAULT}}"
+        # convert to lowercase
+        PROCEED="${PROCEED,,,}"
+    else
+        PROCEED="y"
+    fi
     
     if [[ "${PROCEED}" == "y" ]]; then        
         #if [ $currentversion == $newversion ]; then 
         #    echo "This appliance is already using the latest version ($currentversion)."
         #    exit 2
-        #fi   
-        echo -n "Updating from $currentversion to $newversion..."
+        #fi
+        if [ -z $recurse ]; then   
+            echo -n "Updating from $currentversion to $newversion..."
+        fi
         # copy latest compose file from hosting
         echo "Copying hosting/$hostingfolder/docker-compose.yml to /loginvsi" &> /loginvsi/update.log
         
