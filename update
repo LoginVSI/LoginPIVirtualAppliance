@@ -12,19 +12,16 @@ fi
 
 
 # Get the hosting repo
-while read -r repo branch hostingfolder; do
-    if [ $repo == "https://github.com/LoginVSI/HostingTAT.git" ]; then        
-        branch="master";
-        hostingfolder="latest/Production/InternalDB"        
-    else
-        branch="release";        
-    fi 
+while read -r repo branch hostingfolder; do             
+    #set this appliance to the release branch, even it was originally build from master branch
+    branch="release"
+    echo $repo $branch $hostingfolder > /root/.hosting 
     if [ -z $offline ]; then 
         if [ ! -z $internal ]; then
             echo "Performing internal update from $2" 
             git clone -q -b "$branch" "$2" /loginvsi/hosting;
         else
-            curl -Lfs -m 10 https://github.com/LoginVSI/VirtualAppliance.git &> /dev/null
+            curl -Lfs -m 10 https://github.com/LoginVSI/LoginPIVirtualAppliance.git &> /dev/null 
             if [[ $? != 0 ]]; then 
                 echo "Failed to connect to github.com, make sure the appliance can access github.com"
                 exit
@@ -34,11 +31,7 @@ while read -r repo branch hostingfolder; do
                 echo "Failed to connect to hub.docker.com, make sure the appliance can access hub.docker.com"
                 exit
             fi
-            if [ $repo == "https://github.com/LoginVSI/Hosting.git" ]; then
-                # PI3 update, we should relaunch the update process from the daemon as it will now have a different address
-                loginvsid update 
-                exit
-            fi
+            
             echo "Performing online update from $repo" 
             git clone -q -b "$branch" "$repo" /loginvsi/hosting;
         fi
