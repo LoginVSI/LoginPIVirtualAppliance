@@ -153,10 +153,11 @@ update() {
       read -r repo branch hostingfolder < /root/.hosting
       #set this appliance to the release branch, even it was originally build from master branch
       branch="release"
+      echo $branch
       echo $repo $branch $hostingfolder > /root/.hosting 
       if [ -z $internal ]; then                        
         curl -Lfs -m 10 https://github.com/LoginVSI/LoginPIVirtualAppliance.git &> /dev/null || (echo "Failed to connect to github.com, make sure the appliance can access github.com" && exit 1)       
-        echo $branch
+        
         git clone -b $branch -q https://github.com/LoginVSI/LoginPIVirtualAppliance.git /loginvsi/update  || (echo "Failed to clone repository, make sure the appliance can access githubber" && exit 1)
       else
         read -rep "InternalUrl for virtual appliance: " applianceurl
