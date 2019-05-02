@@ -157,7 +157,10 @@ if [[ "${PROCEED}" == "y" ]]; then
         # pull the new images from dockerhub if we are online
         base64 -d < /root/.play | docker login -u vsiplayaccount --password-stdin &>> /loginvsi/update.log
         cd /loginvsi || (echo "Failed to find /loginvsi folder" && exit 1)
-        docker-compose pull --quiet &>>/loginvsi/update.log || (echo "Something went wrong during pulling of the images from docker hub, please verify this appliance can connect to index.docker.io" && exit 1)
+        docker-compose pull --quiet &>>/loginvsi/update.log 
+        if [ $? != 0 ]; then 
+         echo "Something went wrong during pulling of the images from docker hub, please verify this appliance can connect to index.docker.io" && exit 1
+        fi
         #for image in $(grep image: < /loginvsi/docker-compose.yml | cut -d':' -f2,3| sort | uniq);do
         #    docker pull $(echo $image | xargs) &>> /loginvsi/update.log
         #done
