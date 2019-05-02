@@ -11,7 +11,7 @@ if [ -d /loginvsi/hosting ]; then
 fi 
 
 
-
+echo "new repo update script"
 
 # Get the hosting repo
 while read -r repo branch hostingfolder; do             
