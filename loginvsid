@@ -39,7 +39,7 @@ start() {
 	# fi
 	# sleep 30
   # done &
-  cd /loginvsi || echo "Failed to find /loginvsi folder";exit 1
+  cd /loginvsi || (echo "Failed to find /loginvsi folder" && exit 1)
   if [ ! -f /loginvsi/.portainerdisabled ]; then
     if [ -n "$(docker ps -a -f name=portainer --format '{{.Image}}')" ]; then
       echo "Portainer already started, skipping start of portainer..." 
@@ -144,7 +144,7 @@ status() {
 update() {
   [[ $(echo "$2" | tr '[:upper:]' '[:lower:]') == "offline" ]] && offline=true  
   [[ $(echo "$2" | tr '[:upper:]' '[:lower:]') == "internal" ]] && internal=true  
-  cd /loginvsi || echo "Failed to find /loginvsi folder";exit 1
+  cd /loginvsi || (echo "Failed to find /loginvsi folder" && exit 1)
   if [ -d /loginvsi/update ]; then
     rm -rf /loginvsi/update
   fi
@@ -159,7 +159,7 @@ update() {
       else
         read -rep "InternalUrl for virtual appliance: " applianceurl
         read -rep "InternalUrl for Hosting: " hostingurl
-        git clone -q $applianceurl /loginvsi/update || echo "Failed to clone repository, make sure the appliance can access tfs, maybe made a typo?";exit 1
+        git clone -q $applianceurl /loginvsi/update || (echo "Failed to clone repository, make sure the appliance can access tfs, maybe made a typo?" && exit 1)
       fi         
   else
     read -rep "Make sure the update iso is connected to the VM, press enter to continue" _
