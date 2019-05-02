@@ -156,7 +156,7 @@ update() {
       echo $repo $branch $hostingfolder > /root/.hosting 
       if [ -z $internal ]; then                        
         curl -Lfs -m 10 https://github.com/LoginVSI/LoginPIVirtualAppliance.git &> /dev/null || echo "Failed to connect to github.com, make sure the appliance can access github.com";exit 1        
-        git clone -b $branch -q https://github.com/LoginVSI/LoginPIVirtualAppliance.git /loginvsi/update  || echo "Failed to clone repository, make sure the appliance can access github";exit 1      
+        git clone -b $branch -q https://github.com/LoginVSI/LoginPIVirtualAppliance.git /loginvsi/update  || echo "Failed to clone repository, make sure the appliance can access githubber";exit 1      
       else
         read -rep "InternalUrl for virtual appliance: " applianceurl
         read -rep "InternalUrl for Hosting: " hostingurl
