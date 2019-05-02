@@ -1,10 +1,11 @@
 #!/bin/bash
+# shellcheck disable=2060,2086,2046,2034
 [[ $(echo "$1" | tr '[:upper:]' '[:lower:]') == "offline" ]] && offline=true
 [[ $(echo "$1" | tr '[:upper:]' '[:lower:]') == "internal" ]] && internal=true
 [[ $(echo "$1" | tr '[:upper:]' '[:lower:]') == "recurse" ]] && recurse=true
 
 
-cd /loginvsi
+cd /loginvsi || echo "Failed to find /loginvsi folder";exit 1
 if [ -d /loginvsi/hosting ]; then
     rm -rf /loginvsi/hosting
 fi 
@@ -18,20 +19,13 @@ while read -r repo branch hostingfolder; do
     branch="release"
     echo $repo $branch $hostingfolder > /root/.hosting 
     if [ -z $offline ]; then 
-        if [ ! -z $internal ]; then
+        if [ -n "$internal" ]; then
             echo "Performing internal update from $2" 
-            git clone -q -b "$branch" "$2" /loginvsi/hosting;
+            git clone -q -b "$branch" "$2" /loginvsi/hosting || echo "Failed to clone repository, make sure the appliance can access tfs";exit 1
         else
-            curl -Lfs -m 10 https://github.com/LoginVSI/LoginPIVirtualAppliance.git &> /dev/null 
-            if [[ $? != 0 ]]; then 
-                echo "Failed to connect to github.com, make sure the appliance can access github.com"
-                exit
-            fi
-            curl -Lfs -m 10 https://hub.docker.com &> /dev/null
-            if [[ $? != 0 ]]; then 
-                echo "Failed to connect to hub.docker.com, make sure the appliance can access hub.docker.com"
-                exit
-            fi
+            curl -Lfs -m 10 https://github.com/LoginVSI/LoginPIVirtualAppliance.git &> /dev/null || echo "Failed to clone repository, make sure the appliance can access github";exit 1
+            
+            curl -Lfs -m 10 https://index.docker.io/v1 &> /dev/null || echo "Failed to connect to index.docker.io, make sure the appliance can access index.docker.io";exit 1
             if [ -z $recurse ]; then
                 echo "Performing online update from $repo" 
             fi
@@ -73,7 +67,7 @@ while read -r repo branch hostingfolder; do
         cp -f "/loginvsi/hosting/$hostingfolder/docker-compose.yml" /loginvsi
         # get the status of trusted/untrusted certs
         currentcertsetting=$(grep SystemConfiguration__AllowUntrustedCertificates < /loginvsi/docker-compose.yml | head -n1 | cut -d':' -f2 | cut -d '"' -f2)
-        if [ ! -z $currentcertsetting ]; then 
+        if [ -n "$currentcertsetting" ]; then 
             # persist status of trusted/untrusted certs
             if [ $currentcertsetting == "true" ]; then
                 sed -i 's,SystemConfiguration__AllowUntrustedCertificates: "false",SystemConfiguration__AllowUntrustedCertificates: "true",g' /loginvsi/docker-compose.yml
@@ -113,10 +107,10 @@ if [[ "${PROCEED}" == "y" ]]; then
 
 
     # create new db folders if needed
-    for f in $(cat /loginvsi/docker-compose.yml | grep "{DB_ROOT}")
+    for f in $(grep "{DB_ROOT}" < /loginvsi/docker-compose.yml)
     do 
         folder=$(echo $f | cut -d"-" -f2 | cut -d"/" -f2 | cut -d":" -f1) 
-        if [ ! -z $folder ]; then
+        if [ -n "$folder" ]; then
             if [ ! -d /loginvsi/data/$folder ]; then        
                 mkdir /loginvsi/data/$folder; 
             fi
@@ -161,13 +155,9 @@ if [[ "${PROCEED}" == "y" ]]; then
 
     if [ -z $offline ]; then 
         # pull the new images from dockerhub if we are online
-        echo $(cat /root/.play) | base64 -d | docker login -u vsiplayaccount --password-stdin &>> /loginvsi/update.log
-        cd /loginvsi
-        docker-compose pull --quiet &>>/loginvsi/update.log
-        if [ $? != 0 ]; then 
-            echo "Something went wrong during pulling of the images from docker hub, please verify this appliance can connect to hub.docker.com"
-            exit
-        fi
+        base64 -d < /root/.play | docker login -u vsiplayaccount --password-stdin &>> /loginvsi/update.log
+        cd /loginvsi || echo "Failed to find /loginvsi folder";exit 1
+        docker-compose pull --quiet &>>/loginvsi/update.log || echo "Something went wrong during pulling of the images from docker hub, please verify this appliance can connect to index.docker.io";exit 1
         #for image in $(grep image: < /loginvsi/docker-compose.yml | cut -d':' -f2,3| sort | uniq);do
         #    docker pull $(echo $image | xargs) &>> /loginvsi/update.log
         #done
