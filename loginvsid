@@ -142,7 +142,7 @@ status() {
   docker service ls -f name=VSI_   
 }
 update() {
-  echo "new repo loginvsid"
+  #echo "new repo loginvsid"
   [[ $(echo "$2" | tr '[:upper:]' '[:lower:]') == "offline" ]] && offline=true  
   [[ $(echo "$2" | tr '[:upper:]' '[:lower:]') == "internal" ]] && internal=true  
   cd /loginvsi || (echo "Failed to find /loginvsi folder" && exit 1)
