@@ -23,7 +23,7 @@ while read -r repo branch hostingfolder; do
             echo "Performing internal update from $2" 
             git clone -q -b "$branch" "$2" /loginvsi/hosting || (echo "Failed to clone repository, make sure the appliance can access tfs" && exit 1)
         else
-            curl -Lfs -m 10 https://github.com/LoginVSI/LoginPIVirtualAppliance.git &> /dev/null || (echo "Failed to clone repository, make sure the appliance can access github" && exit 1)
+            curl -Lfs -m 10 https://github.com/LoginVSI/LoginPIVirtualAppliance.git &> /dev/null || (echo "Failed to connect to githudb, make sure the appliance can access github" && exit 1)
             
             curl -Lfs -m 10 https://index.docker.io/v1 &> /dev/null || (echo "Failed to connect to index.docker.io, make sure the appliance can access index.docker.io" && exit 1)
             if [ -z $recurse ]; then
