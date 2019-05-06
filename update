@@ -145,6 +145,10 @@ if [[ "${PROCEED}" == "y" ]]; then
                 echo "Found new secret: $newsecret, creating it now..." &>> /loginvsi/update.log
                 openssl rand -hex 40 | head -c 40 | tr [:lower:] [:upper:] | docker secret create ENGINE_SECRET - &>> /loginvsi/update.log
                 ;; 
+            EVENTLOGGER_SECRET)
+                 echo "Found new secret: $newsecret, creating it now..." &>> /loginvsi/update.log
+                openssl rand -hex 40 | head -c 40 | tr [:lower:] [:upper:] | docker secret create EVENTLOGGER_SECRET - &>> /loginvsi/update.log
+                ;;
             *) 
                 echo "WARNING: Found new secret: $newsecret, but this updater does not know how to handle it!" 
                 ;;
