@@ -1,0 +1,14 @@
+#!/bin/bash
+cd /loginvsi || (echo "Failed to find /loginvsi folder" && exit 1)
+rm -rf /loginvsi/startup.log  
+
+composefilepath=$(grep "COMPOSEFILE=" < /loginvsi/.env | cut -d "=" -f2)
+/loginvsi/bin/start/prepareenvfile /loginvsi/.env
+/loginvsi/bin/shared/setwelcomemessage /loginvsi/.env
+/loginvsi/bin/start/createsecrets $composefilepath
+/loginvsi/bin/start/createvolumes $composefilepath
+/loginvsi/bin/start/startvsistack $composefilepath
+/loginvsi/bin/start/copycatocontentdelivery
+
+
+

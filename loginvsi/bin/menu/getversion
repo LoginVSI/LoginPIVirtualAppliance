@@ -1,0 +1,5 @@
+#!/bin/bash
+composefilepath=$(grep "COMPOSEFILE=" < /loginvsi/.env | cut -d "=" -f2)
+version=$(grep "Version__Number" < $composefilepath | cut -d':' -f2 | cut -d"'" -f2 | tail -1)
+TITLE=$(cat /loginvsi/.title)
+echo "title: ${TITLE} - ${version}"

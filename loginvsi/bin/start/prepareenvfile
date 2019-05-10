@@ -1,0 +1,33 @@
+#!/bin/bash
+envfilepath="$1"
+netadapters=$(ip -o link show | while read -r _ dev _ _ _ _ _ _ _ _ _ _ _ _ _ _ mac _ _; do 
+        if [[ ${mac} != brd && ${mac} != 00:00:00:00:00:00 && ${dev} != br-*  && ${dev} != veth* ]]; then
+            echo ${dev%/*} | awk '{split($1,n,":");print n[1]}'; 
+        fi     
+    done
+    )   
+for netadapter in $netadapters; do
+    ip=$(ip -o addr show $netadapter primary scope global | while read -r _ dev _ addr rest; do 
+        if [[ ${dev} != docker* ]]; then
+            echo ${addr%/*}; 
+        fi       
+    done
+    )
+    allowed_ips+=";https://$ip" 
+done
+
+fqdn=$(hostname).$(domainname)
+
+allowed_urls=$(grep 'ALLOWED_CLIENT_URLS' < $envfilepath | cut -d'=' -f2)
+allowed_urls=$(echo $allowed_urls | sed "s,https://$fqdn,,g")
+allowed_urls=$(echo $allowed_urls | sed "s,$allowed_ips,,g")
+allowed_urls="https://$fqdn$allowed_ips;$allowed_urls"
+#allowed_urls=${new_allowed_urls#";"}
+
+sed -i '/ALLOWED_CLIENT_URLS=/d' $envfilepath
+sed -i '/COMPOSE_PROJECT_NAME=/d' $envfilepath
+echo COMPOSE_PROJECT_NAME=loginvsi >>$envfilepath
+echo ALLOWED_CLIENT_URLS=$allowed_urls >>$envfilepath
+
+
+

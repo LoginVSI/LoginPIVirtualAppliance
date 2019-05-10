@@ -8,20 +8,20 @@ color:desktop:blue:black
 color:menu:black:lightgray
 color:selbar:lightgray:black
 #Define the main menu:
-preproc: /loginvsi/menu/getversion
+preproc: /loginvsi/bin/menu/getversion
 
 menu:main:Maintenance Menu
 	exit:Logout
 	exec:Reboot::sudo reboot
 	nop
-	exec:Change your password:pause:/loginvsi/bin/changepassword
-	preproc: /loginvsi/menu/gethostname
-	exec:Regenerate self-signed certificates:pause:/loginvsi/bin/regeneratessl
-	exec:Apply new certificate:pause:/loginvsi/bin/applypfx
-	exec:Change allowed urls:pause:/loginvsi/bin/changeallowedurls
+	exec:Change your password:pause:/loginvsi/bin/menu/changepassword
+	preproc: /loginvsi/bin/menu/gethostname
+	exec:Regenerate self-signed certificates:pause:/loginvsi/bin/menu/regeneratessl /loginvsi/.env
+	exec:Apply new certificate:pause:/loginvsi/bin/menu/applypfx
+	exec:Change allowed urls:pause:/loginvsi/bin/menu/changeallowedurls /loginvsi/.env
 	exec:Update:pause:loginvsid update
-	exec:Stop and disable portainer:pause:/loginvsi/bin/disableportainer
-	exec:Start and enable portainer:pause:/loginvsi/bin/enableportainer
+	exec:Stop and disable portainer:pause:/loginvsi/bin/menu/disableportainer /loginvsi/.env
+	exec:Start and enable portainer:pause:/loginvsi/bin/menu/enableportainer /loginvsi/.env
 	nop
 	group:Network Configuration
 	exec::makemenu: (\
@@ -31,7 +31,7 @@ menu:main:Maintenance Menu
 		echo 'exec:Show Network interfaces:display:/sbin/ifconfig -a' ; \
 		echo "exec:Show Routes:display:/sbin/route -n" ; \
 		echo 'nop' ; \
-		echo 'preproc:/loginvsi/menu/getnetworkadapters' ; \
+		echo 'preproc:/loginvsi/bin/menu/getnetworkadapters' ; \
 	)
 	show:::network_conf
 	remove:::network_conf
@@ -44,13 +44,12 @@ menu:troublshoot:Troubleshooting
 	exit:Back to main menu
 	nop:--------------------------
 	exec:Start enable SSH server:pause:systemctl enable ssh;systemctl start ssh
-	exec:Stop and disable SSH server:pause:systemctl disable ssh; systemctl stop ssh	
-	exec:Restart portainer:pause:docker restart portainer	
+	exec:Stop and disable SSH server:pause:systemctl disable ssh; systemctl stop ssh		
 	exec:Ping:edit,pause:clear;ping -c 10 ~Address:~
 	exec:Show netstat:display:netstat -tuna
 	exec:Show LoginVSI service status:display:loginvsid status
 	exec:Restart LoginVSI services:pause:loginvsid restart
 	exec:Open bash shell::/bin/bash
-	exec:Factory Reset::/loginvsi/bin/factory_reset.sh
+	exec:Factory Reset::/loginvsi/bin/menu/factoryreset
 	nop
 		

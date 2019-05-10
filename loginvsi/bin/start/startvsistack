@@ -1,0 +1,26 @@
+#!/bin/bash
+composeFilePath="$1"
+
+
+export $(cat /loginvsi/.env)
+docker stack deploy --prune --resolve-image never --compose-file $composeFilePath VSI &>>/loginvsi/startup.log
+  
+TOTAL=$(docker stack services VSI --format "{{.Replicas}}" | wc -l)
+MAXCOUNT=900
+COUNT=0
+while [ $COUNT -le $MAXCOUNT ]; 
+do    
+  COUNT=$((COUNT+1))    
+  RUNNING=$(docker stack services VSI --format "{{.Replicas}}" | grep -c "1/1")    
+  if [ $TOTAL -eq $RUNNING ]; then
+    printf "\rStarting LoginVSI services... \e[32m[DONE]\e[39m \r\n" 
+    DONE="true" 
+    break
+  else
+    printf "\rStarting LoginVSI services... \e[36m[%s]\e[39m   " "$RUNNING/$TOTAL" 
+  fi
+  sleep 1 &>/dev/null  
+done
+if [ -z $DONE ]; then
+  printf "\rStarting LoginVSI services... \e[31m[TIMEOUT]\e[39m \r\n" 
+fi  

@@ -1,9 +1,10 @@
 #!/bin/bash
-version=$(grep "Version__Number" < /loginvsi/docker-compose.yml | cut -d':' -f2 | cut -d"'" -f2 | tail -1)
-applianceversion=$(grep "Appliance_Version" < /loginvsi/docker-compose.yml | cut -d':' -f2 | cut -d"'" -f2 | tail -1)
+composefilepath=$(grep "COMPOSEFILE=" < /loginvsi/.env | cut -d "=" -f2)
+version=$(grep "Version__Number" < $composefilepath | cut -d':' -f2 | cut -d"'" -f2 | tail -1)
+
 TITLE=$(cat /loginvsi/.title)
 # add first_run script
-netadapters=$(ip -o link show | while read -r num dev fam mtulabel mtusize qlabel queu statelabel state modelabel mode grouplabel group qlenlabel qlen maclabel mac brdlabel brcast; do 
+netadapters=$(ip -o link show | while read -r _ dev _ _ _ _ _ _ _ _ _ _ _ _ _ _ mac _ _; do 
         if [[ ${mac} != brd && ${mac} != 00:00:00:00:00:00 && ${dev} != br-*  && ${dev} != veth* ]]; then
             echo ${dev%/*}; 
         fi
@@ -12,18 +13,18 @@ netadapters=$(ip -o link show | while read -r num dev fam mtulabel mtusize qlabe
 netadapter=$(echo $netadapters | tail -1 | awk '{split($1,n,":");print n[1]}')
 
 
-ip=$(ip -o addr show $netadapter primary scope global | while read -r num dev fam addr rest; do 
+ip=$(ip -o addr show $netadapter primary scope global | while read -r _ dev _ addr rest; do 
         if [[ ${dev} != docker* ]]; then
             echo ${addr%/*}; 
         fi
     done
     )
-gateway=$(ip -o route list | grep default | while read -r default via gateway dev net; do echo $gateway;done )
+gateway=$(ip -o route list | grep default | while read -r _ _ gateway dev _; do echo $gateway;done )
 netmask=$(ifconfig $netadapter | grep netmask | cut -d" " -f13)
 nameserversarray=$(cat /etc/resolv.conf | grep -i nameserver|head -n2|cut -d ' ' -f2)
 nameservers=$(echo $(echo "${nameserversarray[@]}"))
-broadcast=$(ip a s dev $netadapter | awk '/inet / {print $4}')
-dnssuffix=$(grep search /etc/resolv.conf | while read -r search suffix; do echo $suffix;done )
+#broadcast=$(ip a s dev $netadapter | awk '/inet / {print $4}')
+dnssuffix=$(grep search /etc/resolv.conf | while read -r _ suffix; do echo $suffix;done )
 
 ValidIpAddressRegex="^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$"
 ValidNetMaskRegex="^(((255\.){3}(255|254|252|248|240|224|192|128+))|((255\.){2}(255|254|252|248|240|224|192|128|0+)\.0)|((255\.)(255|254|252|248|240|224|192|128|0+)(\.0+){2})|((255|254|252|248|240|224|192|128|0+)(\.0+){3}))$"
@@ -36,7 +37,7 @@ trap 'echo "You cannot cancel this script!"' SIGINT
         stty sane
 
         # ask questions
-        echo "Welcome to $TITLE - version $version ($applianceversion)"
+        echo "Welcome to $TITLE - version $version"
         echo "Please help answer the following questions to get the system setup..."
         validhostname=false
         while [[ $validhostname == false ]]; do        
@@ -183,7 +184,7 @@ iface $netadapter inet dhcp
     # set fqdn
      [[ -z $new_hostname ]] && new_hostname=$(hostname)
      [[ -z $new_domain ]] && new_domain="$(domainname)"
-    export fqdn="$new_hostname.$new_domain"    
+    fqdn="$new_hostname.$new_domain"    
     echo ""
     echo "Setting fqdn: $fqdn"
 	
@@ -203,26 +204,25 @@ iface $netadapter inet dhcp
     hostname "$new_hostname"
 	
 	echo "   
-    Welcome to $TITLE - version $version ($applianceversion)
+    Welcome to $TITLE - version $version
     $TITLE appliance is not yet configured!
     Logon with admin and the password you set previously
 	"  > /etc/issue
     
 	
-	adminpass=$(docker run --rm httpd:2.4-alpine htpasswd -nbB admin $password | cut -d ":" -f 2)
 	
 	touch -f /loginvsi/first_run.chk
 	
 	echo "#!/bin/bash" > /home/admin/.bash_profile
 	echo "if [ ! -f '/loginvsi/second_run.chk' ]; then"  >> /home/admin/.bash_profile
 	echo "  base64 -d < /home/admin/.password | sudo -S -p '' echo 'Starting LoginVSI configuration tool...'" >> /home/admin/.bash_profile
-	echo "  sudo /loginvsi/firstrun" >> /home/admin/.bash_profile
+	echo "  sudo /loginvsi//bin/firstrun" >> /home/admin/.bash_profile
 	echo "fi" >> /home/admin/.bash_profile
 	chmod +x /home/admin/.bash_profile
     echo "$password" | base64 >/home/admin/.password
-    echo $adminpass >/root/.portainer
+    
 	
-    chmod 700 /root/.portainer
+    
     
     echo "Rebooting..."
         sleep 5
@@ -237,19 +237,20 @@ if [ ! -f "/loginvsi/second_run.chk" ]; then
     dpkg-reconfigure -f noninteractive openssh-server
     /etc/init.d/ssh start 
     echo "Generating self-signed certificates..."
-	export fqdn=$(hostname).$(domainname)
+	fqdn=$(hostname).$(domainname)
+    
 	mkdir /certificates
 	cert_password=$(openssl rand -hex 32)    
 	#Docker (encrypted key)
-    /loginvsi/bin/sslgen -c=NL -s=Noord-Holland -l=Amsterdam -o="Login VSI B.V." -u=Development -n=${fqdn} -e=info@loginvsi.com -d=999999 -w=$cert_password -p=/certificates/
+    /loginvsi/bin/shared/sslgen -c=NL -s=Noord-Holland -l=Amsterdam -o="Login VSI B.V." -u=Development -n=${fqdn} -e=info@loginvsi.com -d=999999 -w=$cert_password -p=/certificates/
 	   
 
-    echo "SSL_CERTIFICATE_KEY_PATH=/certificates/${fqdn}.key" >/loginvsi/.env
+    echo "SSL_CERTIFICATE_KEY_PATH=/certificates/${fqdn}.key" >>/loginvsi/.env
     echo "SSL_CERTIFICATE_PATH=/certificates/${fqdn}.crt" >>/loginvsi/.env
     echo "GATEWAY_PORT=443" >>/loginvsi/.env
 
 	# check if we have link & valid ip address
-    netadapters=$(ip -o link show | while read -r num dev fam mtulabel mtusize qlabel queu statelabel state modelabel mode grouplabel group qlenlabel qlen maclabel mac brdlabel brcast; do 
+    netadapters=$(ip -o link show | while read -r _ dev _ _ _ _ _ _ _ _ _ _ _ _ _ _ mac _ _; do 
         if [[ ${mac} != brd && ${mac} != 00:00:00:00:00:00 && ${dev} != br-*  && ${dev} != veth* ]]; then
             echo ${dev%/*}; 
         fi     
@@ -268,7 +269,7 @@ if [ ! -f "/loginvsi/second_run.chk" ]; then
     done
     echo ""
     ip=
-    ip=$(ip -o addr show $netadapter primary scope global | while read -r num dev fam addr rest; do 
+    ip=$(ip -o addr show $netadapter primary scope global | while read -r _ dev _ addr rest; do 
         if [[ ${dev} != docker* ]]; then
             echo ${addr%/*}; 
         fi       
@@ -287,25 +288,6 @@ if [ ! -f "/loginvsi/second_run.chk" ]; then
     rm /home/admin/.password
     echo "$cert_password" | docker secret create VSI_SSL_CERTIFICATE_KEY_PASSWORD - &>/dev/null        
     
-    # create launcher secret
-    openssl rand -hex 40 | head -c 40 | tr [:lower:] [:upper:] | docker secret create LAUNCHER_SECRET - &>/dev/null
-	openssl rand -hex 40 | head -c 40 | tr [:lower:] [:upper:] | docker secret create ENGINE_SECRET - &>/dev/null
-    openssl rand -hex 40 | head -c 40 | tr [:lower:] [:upper:] | docker secret create EVENTLOGGER_SECRET - &>/dev/null
-    # create data volume folders for the dbs
-    if [ ! -d /loginvsi/data ]; then        
-		mkdir /loginvsi/data
-	fi
-    echo "DB_ROOT=/loginvsi/data" >>/loginvsi/.env
-    for f in $(cat /loginvsi/docker-compose.yml | grep "{DB_ROOT}")
-    do 
-        folder=$(echo $f | cut -d"-" -f2 | cut -d"/" -f2 | cut -d":" -f1) 
-        if [ ! -z $folder ]; then
-          if [ ! -d /loginvsi/data/$folder ]; then        
-              mkdir /loginvsi/data/$folder; 
-          fi
-        fi
-    done
-
     chmod +x /usr/bin/loginvsid
     chown root:root /usr/bin/loginvsid
 	
@@ -318,18 +300,10 @@ if [ ! -f "/loginvsi/second_run.chk" ]; then
     #sed -i s,SSL_CERTIFICATE_KEY_PATH=..\\..\\..\\Certificates\\certificate.key,SSL_CERTIFICATE_KEY_PATH=/certifcates/certificate.key, /loginvsi/.env
     #sed -i s,SSL_CERTIFICATE_PATH=..\..\..\Certificates\certificate.crt,SSL_CERTIFICATE_PATH=/certifcates/certificate.crt, /loginvsi/.env
     systemctl enable loginvsid &>/dev/null
-    systemctl enable docker-cleanup &>/dev/null
+    #systemctl enable docker-cleanup &>/dev/null
     touch -f /loginvsi/second_run.chk
     
-    echo "   
-    Welcome to $TITLE - version $version ($applianceversion)
-
-    The Login PI Webinterface is available at: 
-        https://\4{$netadapter}
-        https://\n.\o
-
-    NOTE: Please make sure to update your dns records accordingly
-    "  > /etc/issue    
+    /loginvsi/bin/shared/setwelcomemessage /loginvsi/.env
 
     echo "#!/bin/bash
     sudo pdmenu -c -q /loginvsi/menu/pdmenurc" > /usr/bin/startmenu

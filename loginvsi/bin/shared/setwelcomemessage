@@ -1,0 +1,20 @@
+#!/bin/bash
+envfilepath="$1"
+composefilepath=$(grep "COMPOSEFILE=" < $envfilepath | cut -d "=" -f2)
+title=$(cat /loginvsi/.title)
+version=$(grep "Version__Number" < $composefilepath | cut -d':' -f2 | cut -d"'" -f2 | tail -1)
+
+echo "   
+    Welcome to $title - version $version
+
+    The Login PI Webinterface is available at: 
+    " > /etc/issue
+OLDIFS=$IFS
+IFS=';'
+for f in $(grep "ALLOWED_CLIENT_URLS=" < $envfilepath | cut -d "=" -f2); do 
+    echo $f >> /etc/issue
+done
+IFS=$OLDIFS
+echo "
+     NOTE: Please make sure to update your dns records accordingly
+    "  >> /etc/issue    

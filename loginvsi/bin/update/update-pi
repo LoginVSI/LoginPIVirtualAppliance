@@ -1,0 +1,27 @@
+#!/bin/bash
+[[ $(echo "$1" | tr '[:upper:]' '[:lower:]') == "offline" ]] && offline=true  
+[[ $(echo "$1" | tr '[:upper:]' '[:lower:]') == "internal" ]] && internal=true  
+
+cd /loginvsi || (echo "Failed to find /loginvsi folder" && exit 1)
+if [ -d /loginvsi/update ]; then
+rm -rf /loginvsi/update
+fi
+if [ -z $offline ]; then                  
+    if [ -z $internal ]; then
+    /loginvsi/bin/update/publicupdate                        
+    else
+    /loginvsi/bin/update/internalupdate        
+    fi         
+else
+/loginvsi/bin/update/offlineupdate
+fi
+# execute update script
+retVal=$?
+if [ $retVal -ne 0 ]; then
+echo "Update process exited with exit code: $retVal"
+exit $retVal  
+else  
+    loginvsid start  
+    rm -rf /loginvsi/update
+fi
+

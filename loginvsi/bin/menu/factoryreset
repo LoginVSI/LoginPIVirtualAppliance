@@ -1,6 +1,7 @@
 #!/bin/bash
-version=$(grep "Version__Number" < /loginvsi/docker-compose.yml | cut -d':' -f2 | cut -d"'" -f2 | tail -1)
-applianceversion=$(grep "Appliance_Version" < /loginvsi/docker-compose.yml | cut -d':' -f2 | cut -d"'" -f2 | tail -1)
+composefilepath=$(grep "COMPOSEFILE=" < /loginvsi/.env | cut -d "=" -f2)
+version=$(grep "Version__Number" < $composefilepath | cut -d':' -f2 | cut -d"'" -f2 | tail -1)
+TITLE=$(cat /loginvsi/.title)
 
 echo "WARNING: YOU ARE ABOUT TO REMOVE ALL CONFIGURATION"
 echo "AND DATA FROM THIS MACHINE."
@@ -13,8 +14,7 @@ esac
 if [ $proceed != true ]; then
     exit 1
 fi
-echo "Read variables from when the virtual appliance was built."
-source /loginvsi/build.conf
+
 
 echo "Removing docker stack. This may take a while"
 docker stack rm VSI  
@@ -55,22 +55,11 @@ auto $netadapter
 iface $netadapter inet dhcp        
     " > /etc/network/interfaces
 
-echo "Reset hostname and domain name"
-hostname $INITIALHOSTNAME
-
-echo "127.0.0.1	localhost $INITIALHOSTNAME $INITIALHOSTNAME.local
-    127.0.1.1	$INITIALHOSTNAME.local
-    # The following lines are desirable for IPv6 capable hosts
-    ::1     localhost ip6-localhost ip6-loopback
-    ff02::1 ip6-allnodes
-    ff02::2 ip6-allrouters
-" > /etc/hosts
-
 echo Reset admin username and password
 echo "admin:admin" | chpasswd
 
 echo Reset message of the day
-echo "Welcome to $TITLE - version $version ($applianceversion)
+echo "Welcome to $TITLE - version $version
 This system is not yet configured, please logon with username: admin and password: admin" > /etc/issue
 
 echo '#!/bin/sh

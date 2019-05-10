@@ -1,0 +1,13 @@
+#!/bin/bash
+if [ -f /certificates/CA.crt ]; then       
+    services=$(docker service ps -q VSI_contentdelivery)
+    for f in $services; do
+        state=$(docker inspect --format "{{.Status.State}}" $f)
+        if [ $state == "running" ]; then        
+            container=$(docker inspect --format "{{.Status.ContainerStatus.ContainerID}}" $f) # needs to be checked when more then 1 instance of contentdelivery is running        
+            echo -n "Copying CA.crt to contentDelivery..."      
+            docker cp /certificates/CA.crt $container:/app/wwwroot/content 
+            printf "\e[32m[DONE]\e[39m \r\n"       
+        fi            
+    done              
+fi

@@ -1,0 +1,7 @@
+#!/bin/bash
+read -r repo branch hostingfolder < /root/.hosting
+read -rep "InternalUrl for virtual appliance: " applianceurl
+read -rep "InternalUrl for Hosting: " hostingurl
+git clone -b $branch -q $applianceurl /loginvsi/update || (echo "Failed to clone repository, make sure the appliance can access tfs, maybe made a typo?" && exit 1)
+chmod +x /loginvsi/update/update
+/loginvsi/update/update internal "$hostingurl"

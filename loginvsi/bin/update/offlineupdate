@@ -1,0 +1,15 @@
+#!/bin/bash
+read -rep "Make sure the update iso is connected to the VM, press enter to continue" _
+[[ ! -d /mnt/cdrom ]] && mkdir -p /mnt/cdrom
+mount /dev/cdrom /mnt/cdrom
+
+if [ ! -f /mnt/cdrom/update/update ]; then
+    echo "Could not find updater, probably the update iso was not mounted properly."
+    exit 1
+fi
+cp -rf /mnt/cdrom/update/ .
+chmod +x /loginvsi/update/update
+/loginvsi/update/update offline
+
+umount /mnt/cdrom
+rm -rf /mnt/cdrom

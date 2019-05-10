@@ -1,0 +1,25 @@
+#!/bin/bash
+composefilepath="$1"
+docker rm -f $(docker ps --filter name=update_registry -q) &>> /loginvsi/update.log
+docker rmi registry:2 &>> /loginvsi/update.log
+echo "$(date) Importing docker registry image, this might take a while"
+gunzip -c /mnt/cdrom/registry.tar.gz | docker image import - registry:2 &>> /loginvsi/update.log
+rm -rf /tmp/registry_data
+mkdir -p /tmp/registry_data
+tar -zxf /mnt/cdrom/registry_data.tar.gz --directory /tmp/registry_data &>> /loginvsi/update.log
+docker run -v /tmp/registry_data:/var/lib/registry -d -p 55555:5000 --entrypoint /entrypoint.sh --name update_registry registry:2 /etc/docker/registry/config.yml &>> /loginvsi/update.log
+echo "$(date) Importing docker images from local registry, this might take a while"
+for image in $(grep image: < $composefilepath | cut -d':' -f2,3| sort | uniq);do
+    docker pull $(echo localhost:55555/$image | xargs) &>> /loginvsi/update.log
+    docker tag $(echo localhost:55555/$image | xargs) $(echo $image | xargs) &>> /loginvsi/update.log
+    docker rmi $(echo localhost:55555/$image | xargs) &>> /loginvsi/update.log
+done
+#docker pull localhost:55555/portainer &>> /loginvsi/update.log
+#docker tag localhost:55555/portainer portainer &>> /loginvsi/update.log
+#docker rmi localhost:55555/portainer &>> /loginvsi/update.log
+
+docker rm -f $(docker ps --filter name=update_registry -q) &>> /loginvsi/update.log
+docker rmi registry:2 &>> /loginvsi/update.log
+docker rmi $(docker image ls localhost:55555/* --format "{{.Repository}}:{{.Tag}}") &>> /loginvsi/update.log
+docker rmi $(docker image ls localhost:55555/*/* --format "{{.Repository}}:{{.Tag}}") &>> /loginvsi/update.log
+rm -rf /tmp/registry_data    

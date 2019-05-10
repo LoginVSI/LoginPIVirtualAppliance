@@ -1,0 +1,12 @@
+#!/bin/bash
+composefilepath="$1"
+
+for f in $(grep "{DB_ROOT}" < $composefilepath)
+do 
+    folder=$(echo $f | cut -d"-" -f2 | cut -d"/" -f2 | cut -d":" -f1) 
+    if [ -n "$folder" ]; then
+        if [ ! -d /loginvsi/data/$folder ]; then        
+            mkdir -p /loginvsi/data/$folder; 
+        fi
+    fi
+done

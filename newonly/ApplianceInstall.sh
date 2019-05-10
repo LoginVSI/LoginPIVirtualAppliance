@@ -7,9 +7,6 @@ INITIALHOSTINGREPO="$5"
 SCRIPT_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 TITLE=$(cat /loginvsi/.title)
 
-echo "INITIALHOSTNAME=\"$INITIALHOSTNAME\"" >> /loginvsi/build.conf
-echo "TITLE=\"$TITLE\"" >> /loginvsi/build.conf
-
 echo $HOSTINGREPO $HOSTINGBRANCH $HOSTINGFOLDER >/root/.hosting
 chmod 700 /root/.hosting
 
@@ -62,14 +59,11 @@ cd /dockerrepo/ || exit
 cp -f $SCRIPT_PATH/../.play /root/.play
 chmod 700 /root/.play
 base64 -d < /root/.play | docker login -u vsiplayaccount --password-stdin 2>&1
-docker pull portainer/portainer 2>&1
-docker pull httpd:2.4-alpine 2>&1
-docker pull meltwater/docker-cleanup:latest
+#docker pull portainer/portainer 2>&1
+#docker pull httpd:2.4-alpine 2>&1
+#docker pull meltwater/docker-cleanup:latest
 
 cd /dockerrepo/$HOSTINGFOLDER || exit
-version=$(grep "Version__Number" < docker-compose.yml | cut -d':' -f2 | cut -d"'" -f2 | tail -1)
-echo $version >/loginvsi/.version
-
 docker-compose pull 2>&1
 docker logout 2>&1
 
@@ -79,30 +73,22 @@ docker logout 2>&1
 
 cp -r -f $SCRIPT_PATH/../loginvsi/* /loginvsi/
 #mkdir /loginvsi
-mkdir /loginvsi/img
-wget -q -O /loginvsi/img/logo_alt.png https://www.loginvsi.com/images/logos/login-vsi-company-logo.png
-cp /loginvsi/img/logo_alt.png /loginvsi/img/logo.png
-cp -r "/dockerrepo/$HOSTINGFOLDER/docker-compose.yml" /loginvsi/
-
-version=$(grep "Version__Number" < /loginvsi/docker-compose.yml | cut -d':' -f2 | cut -d"'" -f2 | tail -1)
-applianceversion=$(grep "Appliance_Version" < /loginvsi/docker-compose.yml | cut -d':' -f2 | cut -d"'" -f2 | tail -1)
-
-echo "VERSION=\"$version\"" >> /loginvsi/build.conf
-
-
+#mkdir /loginvsi/img
+#wget -q -O /loginvsi/img/logo_alt.png https://www.loginvsi.com/images/logos/login-vsi-company-logo.png
+#cp /loginvsi/img/logo_alt.png /loginvsi/img/logo.png
+mkdir /loginvsi/compose
+cp -R "/dockerrepo/$HOSTINGFOLDER" /loginvsi/compose
+composefile="/loginvsi/compose/InternalDB/docker-compose.yml"
+echo "COMPOSEFILE=$composefile" > /loginvsi/.env
+echo "DB_ROOT=/loginvsi/data" >> /loginvsi/.env
+version=$(grep "Version__Number" < $composefile | cut -d':' -f2 | cut -d"'" -f2 | tail -1)
 
 rm -rf /dockerrepo
-
- 
 rm /etc/pdmenurc
 
 cp -f $SCRIPT_PATH/../loginvsid /usr/bin/
 cp -f $SCRIPT_PATH/../loginvsid.service /etc/systemd/system/
-cp -f $SCRIPT_PATH/../docker-cleanup.service /etc/systemd/system/
-#cp -f $SCRIPT_PATH/firstrun /loginvsi/
 cp -f $SCRIPT_PATH/../daemon.json /etc/docker
-
-
 
 echo $INITIALHOSTNAME > /etc/hostname
 hostname $INITIALHOSTNAME
@@ -119,16 +105,14 @@ echo "127.0.0.1	localhost $INITIALHOSTNAME $INITIALHOSTNAME.local
 echo "#!/bin/bash" > /home/admin/.bash_profile
 echo "if [ ! -f '/loginvsi/first_run.chk' ]; then"  >> /home/admin/.bash_profile
 echo "  echo 'admin' | sudo -S -p '' echo 'Starting LoginVSI configuration tool...'" >> /home/admin/.bash_profile
-echo "  sudo /loginvsi/firstrun" >> /home/admin/.bash_profile
+echo "  sudo /loginvsi/bin/firstrun" >> /home/admin/.bash_profile
 echo "fi" >> /home/admin/.bash_profile
 chmod +x /home/admin/.bash_profile
-chmod +x /loginvsi/firstrun
-chmod +x /loginvsi/menu/*
-chmod +x /loginvsi/bin/*
+chmod -R +x /loginvsi/bin/*
 
 echo "admin:admin" | chpasswd
 
-echo "Welcome to $TITLE - version $version ($applianceversion)
+echo "Welcome to $TITLE - version $version
 This system is not yet configured, please logon with username: admin and password: admin" > /etc/issue
 
 echo '#!/bin/sh
@@ -170,7 +154,7 @@ net.ipv6.conf.lo.disable_ipv6 = 1
 
 passwd -dl root &>/dev/null
 
-netadapters=$(ip -o link show | while read -r num dev fam mtulabel mtusize qlabel queu statelabel state modelabel mode grouplabel group qlenlabel qlen maclabel mac brdlabel brcast; do 
+netadapters=$(ip -o link show | while read -r _ dev _ _ _ _ _ _ _ _ _ _ _ _ _ _ mac _ _; do 
         if [[ ${mac} != brd && ${mac} != 00:00:00:00:00:00 && ${dev} != br-*  && ${dev} != veth* ]]; then
             echo ${dev%/*}; 
         fi     

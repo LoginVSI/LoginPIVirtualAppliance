@@ -1,8 +1,0 @@
-#!/bin/bash
-touch /loginvsi/.portainerdisabled
-if [ ! -z $(docker ps -a -f name=portainer --format "{{.Image}}") ]; then
-    docker rm -f portainer
-fi
-
-
-
