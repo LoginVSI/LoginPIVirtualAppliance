@@ -32,5 +32,5 @@ if [ -z $regen ]; then
   regen="y"
 fi
 if [ ${regen,,} == "y" ]; then
-  /loginvsi/bin/menu/regeneratessl
+  /loginvsi/bin/menu/regeneratessl /loginvsi/.env
 fi 

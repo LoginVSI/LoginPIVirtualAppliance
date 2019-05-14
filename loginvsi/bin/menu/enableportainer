@@ -1,5 +1,5 @@
 #!/bin/bash
-$envfilepath="$1"
+envfilepath="$1"
 sed -i '/PORTAINER_ENABLED=/d' $envfilepath
 echo "PORTAINER_ENABLED=1" >> $envfilepath
 docker service scale VSI_portainer=1

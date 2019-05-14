@@ -22,7 +22,7 @@ echo "SSL_CERTIFICATE_PATH=/certificates/${fqdn}.crt" >>$envfilepath
 
 # switch to unsecure mode
 if [ $(docker service ls -q -f name=VSI_systemconfiguration | wc -l) -gt 0 ]; then
-    docker service --env-add SystemConfiguration__AllowUntrustedCertificates="true" VSI_systemconfiguration
+    docker service update --env-add SystemConfiguration__AllowUntrustedCertificates="true" VSI_systemconfiguration
     docker service update --env-add SystemConfiguration__AllowUntrustedCertificates="true" VSI_sessionlogonscripts
     sed -i 's,SystemConfiguration__AllowUntrustedCertificates: "false",SystemConfiguration__AllowUntrustedCertificates: "true",g' $composefilepath
 fi  

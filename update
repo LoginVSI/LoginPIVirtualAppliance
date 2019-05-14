@@ -83,7 +83,7 @@ while read -r repo branch _; do
         fi
         # Check if any new entries in new .env and add them to the current .env
         for i in $(diff -y $newenvfilepath /loginvsi/.env | grep ">" | cut -d ">" -f2 | xargs); do
-            echo $i >> .env
+            echo $i >> /loginvsi/.env
         done
     fi
 done < /root/.hosting
