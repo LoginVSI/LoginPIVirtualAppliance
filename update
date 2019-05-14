@@ -71,7 +71,7 @@ while read -r repo branch _; do
         currentcertsetting=$(grep SystemConfiguration__AllowUntrustedCertificates < $composefilepath | head -n1 | cut -d':' -f2 | cut -d '"' -f2)
 
         # copy the new compose files
-        cp -Rf "/loginvsi/hosting/latest" /loginvsi/compose
+        cp -Rf "/loginvsi/hosting/latest/Production" /loginvsi/compose
 
         if [ -n "$currentcertsetting" ]; then 
             # persist status of trusted/untrusted certs
