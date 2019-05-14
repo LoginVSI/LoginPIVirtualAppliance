@@ -129,7 +129,7 @@ if [[ "${PROCEED}" == "y" ]]; then
     rm -rf /loginvsi/hosting
     
     composefilepath=$(grep "COMPOSEFILE=" < /loginvsi/.env | cut -d "=" -f2)
-
+    grep "PORTAINER_ENABLED=" < /loginvsi.env || echo "PORTAINER_ENABLED=1" >> /loginvsi/.env
     if [ -z $offline ]; then 
         # pull the new images from dockerhub if we are online
         base64 -d < /root/.play | docker login -u vsiplayaccount --password-stdin &>> /loginvsi/update.log

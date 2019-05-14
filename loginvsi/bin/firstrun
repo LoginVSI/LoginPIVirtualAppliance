@@ -248,6 +248,7 @@ if [ ! -f "/loginvsi/second_run.chk" ]; then
     echo "SSL_CERTIFICATE_KEY_PATH=/certificates/${fqdn}.key" >>/loginvsi/.env
     echo "SSL_CERTIFICATE_PATH=/certificates/${fqdn}.crt" >>/loginvsi/.env
     echo "GATEWAY_PORT=443" >>/loginvsi/.env
+    grep "PORTAINER_ENABLED=" < /loginvsi.env || echo "PORTAINER_ENABLED=1" >> /loginvsi/.env
 
 	# check if we have link & valid ip address
     netadapters=$(ip -o link show | while read -r _ dev _ _ _ _ _ _ _ _ _ _ _ _ _ _ mac _ _; do 
@@ -304,6 +305,7 @@ if [ ! -f "/loginvsi/second_run.chk" ]; then
     touch -f /loginvsi/second_run.chk
     
     /loginvsi/bin/shared/setwelcomemessage /loginvsi/.env
+    
 
     echo "#!/bin/bash
     sudo pdmenu -c -q /loginvsi/menu/pdmenurc" > /usr/bin/startmenu
