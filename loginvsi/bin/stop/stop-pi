@@ -1,5 +1,5 @@
 #!/bin/bash
  rm -rf /loginvsi/stop.log
  
- /loginvsi/bin/stopvsistack
+ /loginvsi/bin/stop/stopvsistack
 
