@@ -53,6 +53,7 @@ while read -r repo branch _; do
         PROCEED="${PROCEED,,,}"
     else
         PROCEED="y"
+        echo -n "Resuming update..."
     fi
     
     if [[ "${PROCEED}" == "y" ]]; then        
