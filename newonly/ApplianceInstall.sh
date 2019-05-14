@@ -88,6 +88,7 @@ rm /etc/pdmenurc
 
 cp -f $SCRIPT_PATH/../loginvsid /usr/bin/
 cp -f $SCRIPT_PATH/../loginvsid.service /etc/systemd/system/
+cp -f $SCRIPT_PATH/../docker-cleanup.service /etc/systemd/system/
 cp -f $SCRIPT_PATH/../daemon.json /etc/docker
 
 echo $INITIALHOSTNAME > /etc/hostname

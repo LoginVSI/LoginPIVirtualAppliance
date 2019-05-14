@@ -116,8 +116,10 @@ if [[ "${PROCEED}" == "y" ]]; then
     # remove old docker-cleanup daemon service if it exists
     if [ $(systemctl | grep -c docker-cleanup) -gt 0 ]; then
         systemctl stop docker-cleanup &>>/loginvsi/update.log        
-        systemctl disable docker-cleanup &>>/loginvsi/update.log        
+        systemctl disable docker-cleanup &>>/loginvsi/update.log                
     fi
+    cp -f update/docker-cleanup.service /etc/systemd/system/
+    systemctl enable docker-cleanup &>> /loginvsi/update.log
     if [ ! -f /etc/docker/daemon.json ]; then
         cp -f update/daemon.json /etc/docker
     fi
