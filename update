@@ -12,7 +12,7 @@ fi
 
 composefilepath=$(grep "COMPOSEFILE=" < /loginvsi/.env | cut -d "=" -f2)
 if [ -n "$composefilepath" ]; then    
-        newcomposefilepath=${composefilepath//\/compose/\/hosting\/Production}
+        newcomposefilepath=${composefilepath//\/compose/\/hosting\/latest\/Production}
         newenvfilepath=${newcomposefilepath//\/docker-compose.yml/\/.env}
     else
         # composefile entry for composefile doesn't exist yet, this can only be an InternalDB variant, since this entry was introduced before adding ExternalDB support
