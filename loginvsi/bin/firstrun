@@ -284,8 +284,8 @@ if [ ! -f "/loginvsi/second_run.chk" ]; then
     
     echo "Initting docker swarm..."  
     docker swarm init &>/dev/null
-    base64 -d < /home/admin/.password | docker secret create ADMIN_PASSWORD - &>/dev/null
-    base64 -d < /home/admin/.password | docker secret create USER_PASSWORD - &>/dev/null    
+    base64 -d < /home/admin/.password | tr -d '\n' | docker secret create ADMIN_PASSWORD - &>/dev/null
+    base64 -d < /home/admin/.password | tr -d '\n' | docker secret create USER_PASSWORD - &>/dev/null    
     rm /home/admin/.password
     echo "$cert_password" | docker secret create VSI_SSL_CERTIFICATE_KEY_PASSWORD - &>/dev/null        
     

@@ -1,18 +1,37 @@
 #!/bin/bash
+share="$1"
+uploadpath="$2"
+username="$3"
+password="$4"
+domain="$5"
+if [ -z $share ]; then
+        read -rep "Please provide the sharename (e.g. \\\\server\\share, don't include subfolder): " share
+        read -rep "Please provide subfolder of share to upload the iso to: (in linux format using / )" uploadpath
+fi 
+if [ -z $username ]; then
+        read -rep "Please provide username to authenticate with $share: "username
+fi 
+if [ -z $password ]; then 
+        read -reps "Please provide the password for $username: " password 
+fi
+if [ -z $domain ]; then
+        read -rep "Please provide domainname for $username: " domain
+fi 
+
 echo "###############################################################"
 echo "#             Offline update generator                        #"
 echo "###############################################################"
 echo "$(date) Installing prereqs"
 apt-get install -y genisoimage &>/dev/null
-rm -rf /tmp/awscli-bundle* 
-curl -s "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "/tmp/awscli-bundle.zip"
-cd /tmp
-unzip awscli-bundle.zip &>/dev/null
-/tmp/awscli-bundle/install -b ~/bin/aws &>/dev/null
-rm -rf /tmp/awscli-bundle* 
+#rm -rf /tmp/awscli-bundle* 
+#curl -s "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "/tmp/awscli-bundle.zip"
+#cd /tmp
+#unzip awscli-bundle.zip &>/dev/null
+#/tmp/awscli-bundle/install -b ~/bin/aws &>/dev/null
+#rm -rf /tmp/awscli-bundle* 
 
-
-version=$(grep "Version__Number" < /loginvsi/docker-compose.yml | cut -d':' -f2 | cut -d"'" -f2 | tail -1)
+composefilepath=$(grep "COMPOSEFILE=" < /loginvsi/.env | cut -d "=" -f2)
+version=$(grep "Version__Number" < $composefilepath | cut -d':' -f2 | cut -d"'" -f2 | tail -1)
 rm -rf /tmp/$version
 mkdir -p /tmp/$version
 
@@ -42,7 +61,7 @@ cd /tmp/$version
 cat /root/.hosting | while read -r repo branch hostingfolder; do
         git clone -q -b "$branch" "$repo" hosting;        
 done;
-git clone -q https://github.com/LoginVSI/VirtualAppliance.git update
+git clone -q https://github.com/LoginVSI/LoginPIVirtualAppliance.git update
 
 rm -rf /tmp/$version/*/.git
 
@@ -50,30 +69,34 @@ isopath="/tmp/$name-$version.iso"
 echo "$(date) Generating ISO"
 genisoimage -quiet -joliet -joliet-long -o $isopath /tmp/$version
 
-read -ep "Press ENTER to upload the iso to amazon" unused
-# Upload update iso to amazon S3
 
-rm -rf /root/.aws
-echo "Only supply the AWS KEY ID and the secret key in the following questions, leave the rest empty"
-/root/bin/aws configure
+# Upload update iso path specified
+if [ -d /mnt/cifs ]; then
+        rm -rf /mnt/cifs
+fi
+mkdir /mnt/cifs
+mount -t cifs -o user=$username,domain=$domain,pass=$password $share /mnt/cifs
 
-url="s3://loginvsidata/Virtual Appliance updates/$(echo $isopath |cut -d'/' -f3)"
-echo "$(date) Uploading $isopath to $url"
-/root/bin/aws s3 cp $isopath "$url"
-/root/bin/aws s3api put-object-acl --bucket loginvsidata --key "Virtual Appliance updates/$(echo $isopath |cut -d'/' -f3)" --acl public-read
+isotargetpath="/mnt/cifs/$uploadpath/$name-$version.iso"
+cp -f $isopath $isotargetpath
+
+
+#url="s3://loginvsidata/Virtual Appliance updates/$(echo $isopath |cut -d'/' -f3)"
+#echo "$(date) Uploading $isopath to $url"
+#/root/bin/aws s3 cp $isopath "$url"
+#/root/bin/aws s3api put-object-acl --bucket loginvsidata --key "Virtual Appliance updates/$(echo $isopath |cut -d'/' -f3)" --acl public-read
+
 echo "Done!"
 echo "###############################################################"
-echo "https://s3-eu-west-1.amazonaws.com/loginvsidata/Virtual+Appliance+updates/$(echo $isopath |cut -d'/' -f3)"
+echo " $share\\$uploadpath\\$name-$version.iso"
 echo "###############################################################"
 
 #cleanup
+umount /mnt/cifs
 docker rmi $(docker image ls localhost:55555/* --format "{{.Repository}}:{{.Tag}}") &>/dev/null
 docker rmi $(docker image ls localhost:55555/*/* --format "{{.Repository}}:{{.Tag}}") &>/dev/null
 docker rm -f $(docker ps --filter name=update_registry -q) &>/dev/null
 docker rmi registry:2 &>/dev/null
 apt-get remove -y genisoimage &>/dev/null
-rm -rf /root/.aws 
-rm -rf /root/.local/lib/aws
-rm -rf /root/bin/aws
 rm -rf /tmp/$version
 

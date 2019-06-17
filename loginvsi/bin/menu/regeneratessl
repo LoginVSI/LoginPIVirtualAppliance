@@ -20,13 +20,11 @@ sed -i '/SSL_CERTIFICATE_PATH=/d' $envfilepath
 echo "SSL_CERTIFICATE_KEY_PATH=/certificates/${fqdn}.key" >>$envfilepath
 echo "SSL_CERTIFICATE_PATH=/certificates/${fqdn}.crt" >>$envfilepath
 
-# switch to unsecure mode
-if [ $(docker service ls -q -f name=VSI_systemconfiguration | wc -l) -gt 0 ]; then
-    docker service update --env-add SystemConfiguration__AllowUntrustedCertificates="true" VSI_systemconfiguration
-    docker service update --env-add SystemConfiguration__AllowUntrustedCertificates="true" VSI_sessionlogonscripts
-    sed -i 's,SystemConfiguration__AllowUntrustedCertificates: "false",SystemConfiguration__AllowUntrustedCertificates: "true",g' $composefilepath
-fi  
-
+for serviceID in $(docker service ls -q);
+do 
+  docker service update --env-add SystemConfiguration__AllowUntrustedCertificates="false" $serviceID
+done 
+sed -i 's,SystemConfiguration__AllowUntrustedCertificates: "true",SystemConfiguration__AllowUntrustedCertificates: "false",g' $composefilepath
 
 # Remove and recreate the secrets
 docker service rm VSI_gateway &>/dev/null

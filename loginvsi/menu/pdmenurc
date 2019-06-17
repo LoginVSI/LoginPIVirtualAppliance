@@ -20,6 +20,7 @@ menu:main:Maintenance Menu
 	exec:Apply new certificate:pause:/loginvsi/bin/menu/applypfx
 	exec:Change allowed urls:pause:/loginvsi/bin/menu/changeallowedurls /loginvsi/.env
 	exec:Update:pause:loginvsid update
+	exec:Offline update:pause: loginvsid update offline
 	exec:Stop and disable portainer:pause:/loginvsi/bin/menu/disableportainer /loginvsi/.env
 	exec:Start and enable portainer:pause:/loginvsi/bin/menu/enableportainer /loginvsi/.env
 	nop

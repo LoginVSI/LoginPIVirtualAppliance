@@ -1,5 +1,6 @@
 #!/bin/bash
 envfilepath="$1"
-sed -i '/PORTAINER_ENABLED=/d' $envfilepath
-echo "PORTAINER_ENABLED=1" >> $envfilepath
+composefilepath=$(grep "COMPOSEFILE=" < $envfilepath | cut -d "=" -f2)
+linenumber=$(grep -n "  portainer:" < $composefilepath | cut -d ":" -f1)
+sed -i "$(($linenumber+4))s/replicas: 0/replicas: 1/" $composefilepath
 docker service scale VSI_portainer=1

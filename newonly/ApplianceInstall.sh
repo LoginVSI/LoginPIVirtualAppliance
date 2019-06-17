@@ -64,6 +64,7 @@ base64 -d < /root/.play | docker login -u vsiplayaccount --password-stdin 2>&1
 #docker pull meltwater/docker-cleanup:latest
 
 cd /dockerrepo/$HOSTINGFOLDER || exit
+
 docker-compose pull 2>&1
 docker logout 2>&1
 
