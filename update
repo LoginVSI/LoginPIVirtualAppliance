@@ -12,7 +12,7 @@ fi
 
 composefilepath=$(grep "COMPOSEFILE=" < /loginvsi/.env | cut -d "=" -f2)
 if [ -n "$composefilepath" ]; then    
-        newcomposefilepath=${composefilepath//\/compose/\/hosting}
+        newcomposefilepath=${composefilepath//\/compose/\/hosting\/Production}
         newenvfilepath=${newcomposefilepath//\/docker-compose.yml/\/.env}
     else
         # composefile entry for composefile doesn't exist yet, this can only be an InternalDB variant, since this entry was introduced before adding ExternalDB support
@@ -37,6 +37,8 @@ while read -r repo branch _; do
                 echo "Performing online update from $repo" 
             fi
             git clone -q -b "$branch" "$repo" /loginvsi/hosting;
+            # set apt sources list snapshot
+            gitlogdate=$(git log --format="%ai" -n 1 | cut -d" " -f1 | tr -d '-')
         fi
     else
         # offline updater, copy hosting files from hosting folder on iso        
