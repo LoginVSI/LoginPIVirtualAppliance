@@ -38,7 +38,7 @@ while read -r repo branch _; do
             fi
             git clone -q -b "$branch" "$repo" /loginvsi/hosting;
             # set apt sources list snapshot
-            gitlogdate=$(git log --format="%ai" -n 1 | cut -d" " -f1 | tr -d '-')
+            #gitlogdate=$(git log --format="%ai" -n 1 /loginvsi/hosting | cut -d" " -f1 | tr -d '-') 
         fi
     else
         # offline updater, copy hosting files from hosting folder on iso        
