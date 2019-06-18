@@ -23,13 +23,12 @@ if [ -n "$composefilepath" ]; then
     fi 
 
 # Get the hosting repo
-while read -r repo branch _; do
-    
-                    
+   
+    repo="https://github.com/LoginVSI/Hosting"               
     if [ -z $offline ]; then 
         if [ -n "$internal" ]; then
             echo "Performing internal update from $2" 
-            git clone -q -b "$branch" "$2" /loginvsi/hosting || (echo "Failed to clone repository, make sure the appliance can access tfs" && exit 1)
+            git clone -q -b release "$2" /loginvsi/hosting || (echo "Failed to clone repository, make sure the appliance can access tfs" && exit 1)
         else
             curl -Lfs -m 10 https://github.com/LoginVSI/LoginPIVirtualAppliance.git &> /dev/null || (echo "Failed to connect to githudb, make sure the appliance can access github" && exit 1)
             
@@ -37,7 +36,7 @@ while read -r repo branch _; do
             if [ -z $recurse ]; then
                 echo "Performing online update from $repo" 
             fi
-            git clone -q -b "$branch" "$repo" /loginvsi/hosting;
+            git clone -q -b release "$repo" /loginvsi/hosting;
             # set apt sources list snapshot
             #gitlogdate=$(git log --format="%ai" -n 1 /loginvsi/hosting | cut -d" " -f1 | tr -d '-') 
         fi
@@ -107,7 +106,7 @@ while read -r repo branch _; do
             grep $key < /loginvsi/.env > /dev/null || (echo "new .env entry found: $line" && echo $line >> /loginvsi/.env)
         done
     fi
-done < /root/.hosting
+
 
 if [[ "${PROCEED}" == "y" ]]; then
     #copy latest loginvsi folder
