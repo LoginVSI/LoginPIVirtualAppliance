@@ -99,8 +99,12 @@ while read -r repo branch _; do
             fi
         fi
         # Check if any new entries in new .env and add them to the current .env
-        for i in $(diff -y $newenvfilepath /loginvsi/.env | grep ">" | cut -d ">" -f2 | xargs); do
-            echo $i >> /loginvsi/.env
+        #for i in $(diff -y $newenvfilepath /loginvsi/.env | grep ">" | cut -d ">" -f2 | xargs); do
+        #    echo $i >> /loginvsi/.env
+        #done
+	for line in $(cat $newenvfilepath); do
+            key=$($line | cut -d'=' -f1)
+            grep $key < /loginvsi/.env || echo "new entry: $line" && echo $line >> /loginvsi/.env
         done
     fi
 done < /root/.hosting
