@@ -104,7 +104,7 @@ while read -r repo branch _; do
         #done
 	for line in $(cat $newenvfilepath); do
             key=$(echo $line | cut -d'=' -f1)
-            grep $key < /loginvsi/.env > /dev/null || echo "new .env entry found: $line" && echo $line >> /loginvsi/.env
+            grep $key < /loginvsi/.env > /dev/null || (echo "new .env entry found: $line" && echo $line >> /loginvsi/.env)
         done
     fi
 done < /root/.hosting
