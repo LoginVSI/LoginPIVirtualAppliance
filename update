@@ -4,7 +4,6 @@
 [[ $(echo "$1" | tr '[:upper:]' '[:lower:]') == "internal" ]] && internal=true
 [[ $(echo "$1" | tr '[:upper:]' '[:lower:]') == "recurse" ]] && recurse=true
 
-cat /loginvsi/.env
 
 cd /loginvsi || (echo "Failed to find /loginvsi folder" && exit 1)
 if [ -d /loginvsi/hosting ]; then
@@ -166,4 +165,4 @@ if [[ "${PROCEED}" == "y" ]]; then
     printf "\e[32m[DONE]\e[39m \r\n"
     # after this script loginvsid start will be called by the update process
 fi
-cat /loginvsi/.env
+
