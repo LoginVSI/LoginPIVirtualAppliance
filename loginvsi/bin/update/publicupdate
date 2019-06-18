@@ -1,6 +1,6 @@
 #!/bin/bash
-read -r repo branch hostingfolder < /root/.hosting
+
 curl -Lfs -m 10 https://github.com/LoginVSI/LoginPIVirtualAppliance.git &> /dev/null || (echo "Failed to connect to github.com, make sure the appliance can access github.com" && exit 1)       
-git clone -b $branch -q https://github.com/LoginVSI/LoginPIVirtualAppliance.git /loginvsi/update  || (echo "Failed to clone repository, make sure the appliance can access githubber" && exit 1)
+git clone -b release -q https://github.com/LoginVSI/LoginPIVirtualAppliance.git /loginvsi/update  || (echo "Failed to clone repository, make sure the appliance can access githubber" && exit 1)
 chmod +x /loginvsi/update/update
 /loginvsi/update/update
