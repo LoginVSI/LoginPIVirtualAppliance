@@ -103,7 +103,7 @@ while read -r repo branch _; do
         #    echo $i >> /loginvsi/.env
         #done
 	for line in $(cat $newenvfilepath); do
-            key=$($line | cut -d'=' -f1)
+            key=$(echo $line | cut -d'=' -f1)
             grep $key < /loginvsi/.env || echo "new entry: $line" && echo $line >> /loginvsi/.env
         done
     fi
