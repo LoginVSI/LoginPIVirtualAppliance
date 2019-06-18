@@ -17,6 +17,7 @@ if [ -n "$composefilepath" ]; then
     else
         # composefile entry for composefile doesn't exist yet, this can only be an InternalDB variant, since this entry was introduced before adding ExternalDB support
         composefilepath="/loginvsi/docker-compose.yml"
+		newcomposefilepath="/loginvsi/hosting/latest/Production/InternalDB/docker-compose.yml"
         newenvfilepath="/loginvsi/hosting/latest/Production/InternalDB/.env"
         echo "COMPOSEFILE=/loginvsi/compose/InternalDB/docker-compose.yml" >>/loginvsi/.env  # add the entry so we know what composefile to start in the future
     fi 
