@@ -2,5 +2,5 @@
 envfilepath="$1"
 composefilepath=$(grep "COMPOSEFILE=" < $envfilepath | cut -d "=" -f2)
 linenumber=$(grep -n "  portainer:" < $composefilepath | cut -d ":" -f1)
-sed -i "$(($linenumber+4))s/replicas: 1/replicas: 0/" < $composefilepath
+sed -i "$(($linenumber+4))s/replicas: 1/replicas: 0/" $composefilepath
 docker service scale VSI_portainer=0
