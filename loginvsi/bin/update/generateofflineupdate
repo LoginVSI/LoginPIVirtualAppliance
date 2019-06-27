@@ -6,10 +6,10 @@ password="$4"
 domain="$5"
 if [ -z $share ]; then
         read -rep "Please provide the sharename (e.g. \\\\server\\share, don't include subfolder): " share
-        read -rep "Please provide subfolder of share to upload the iso to: (in linux format using / )" uploadpath
+        read -rep "Please provide subfolder of share to upload the iso to (in linux format using / ): " uploadpath
 fi 
 if [ -z $username ]; then
-        read -rep "Please provide username to authenticate with $share: "username
+        read -rep "Please provide username to authenticate with $share: " username
 fi 
 if [ -z $password ]; then 
         read -reps "Please provide the password for $username: " password 
