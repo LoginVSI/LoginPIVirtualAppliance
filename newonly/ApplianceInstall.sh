@@ -63,13 +63,10 @@ base64 -d < /root/.play | docker login -u vsiplayaccount --password-stdin 2>&1
 #docker pull httpd:2.4-alpine 2>&1
 #docker pull meltwater/docker-cleanup:latest
 
-cd /dockerrepo/$HOSTINGFOLDER || exit
+cd /dockerrepo/$HOSTINGFOLDER/InternalDB || exit
 
 docker-compose pull 2>&1
 docker logout 2>&1
-
-
-
 
 
 cp -r -f $SCRIPT_PATH/../loginvsi/* /loginvsi/
@@ -78,10 +75,11 @@ cp -r -f $SCRIPT_PATH/../loginvsi/* /loginvsi/
 #wget -q -O /loginvsi/img/logo_alt.png https://www.loginvsi.com/images/logos/login-vsi-company-logo.png
 #cp /loginvsi/img/logo_alt.png /loginvsi/img/logo.png
 mkdir /loginvsi/compose
-cp -R "/dockerrepo/$HOSTINGFOLDER" /loginvsi/compose
+cp -R "/dockerrepo/$HOSTINGFOLDER/." /loginvsi/compose
 composefile="/loginvsi/compose/InternalDB/docker-compose.yml"
 echo "COMPOSEFILE=$composefile" > /loginvsi/.env
 echo "DB_ROOT=/loginvsi/data" >> /loginvsi/.env
+echo "PI_ROOT=/loginvsi" >> /loginvsi/.env
 version=$(grep "Version__Number" < $composefile | cut -d':' -f2 | cut -d"'" -f2 | tail -1)
 
 rm -rf /dockerrepo
@@ -89,9 +87,11 @@ rm /etc/pdmenurc
 
 cp -f $SCRIPT_PATH/../loginvsid /usr/bin/
 cp -f $SCRIPT_PATH/../loginvsid.service /etc/systemd/system/
-cp -f $SCRIPT_PATH/../docker-cleanup.service /etc/systemd/system/
 cp -f $SCRIPT_PATH/../daemon.json /etc/docker
+cp -f /loginvsi/bin/guard/pi_guard.service /etc/systemd/system/
 
+systemctl enable pi_guard &>/dev/null
+    
 echo $INITIALHOSTNAME > /etc/hostname
 hostname $INITIALHOSTNAME
 
@@ -154,7 +154,6 @@ net.ipv6.conf.default.disable_ipv6 = 1
 net.ipv6.conf.lo.disable_ipv6 = 1
 " >>/etc/sysctl.conf
 
-passwd -dl root &>/dev/null
 
 netadapters=$(ip -o link show | while read -r _ dev _ _ _ _ _ _ _ _ _ _ _ _ _ _ mac _ _; do 
         if [[ ${mac} != brd && ${mac} != 00:00:00:00:00:00 && ${dev} != br-*  && ${dev} != veth* ]]; then
@@ -181,9 +180,25 @@ iface $netadapter inet dhcp
     " > /etc/network/interfaces
 
 # Cleanup
-rm -rf /home/admin/*
-rm -rf /home/admin/.bash_history
-rm -rf /home/admin/.git
-rm -rf /root/.bash_history
-rm -rf /root/.ssh
+#rm -rf /home/admin/*
+#rm -rf /home/admin/.bash_history
+#rm -rf /home/admin/.git
+#rm -rf /root/.bash_history
+#rm -rf /root/.ssh
 
+# Set apt snapshotdate
+snapshotdate=$(date -I | tr -d '-')
+if [ ! -f /etc/apt/sources.list.org ]; then 
+    cp /etc/apt/sources.list /etc/apt/sources.list.org
+fi
+echo "
+deb     [check-valid-until=no]  https://snapshot.debian.org/archive/debian/$snapshotdate/ stretch main
+deb-src [check-valid-until=no]  https://snapshot.debian.org/archive/debian/$snapshotdate/ stretch main
+
+deb     [check-valid-until=no]  https://snapshot.debian.org/archive/debian-security/$snapshotdate/ stretch/updates main
+deb-src [check-valid-until=no]  https://snapshot.debian.org/archive/debian-security/$snapshotdate/ stretch/updates main
+
+deb     [check-valid-until=no]  https://snapshot.debian.org/archive/debian/$snapshotdate/ stretch-updates main
+deb-src [check-valid-until=no]  https://snapshot.debian.org/archive/debian/$snapshotdate/ stretch-updates main
+
+" > /etc/apt/sources.list

@@ -1,6 +1,12 @@
 #!/bin/bash
+latest=$(curl -s https://loginvsidata.s3-eu-west-1.amazonaws.com/LoginPI3_ISO/public/latest.txt)
+echo "Downloading $latest"
+curl -o /tmp/$latest https://loginvsidata.s3-eu-west-1.amazonaws.com/LoginPI3_ISO/public/$latest
+mkdir -p /mnt/cdrom
 
-curl -Lfs -m 10 https://github.com/LoginVSI/LoginPIVirtualAppliance.git &> /dev/null || (echo "Failed to connect to github.com, make sure the appliance can access github.com" && exit 1)       
-git clone -b release -q https://github.com/LoginVSI/LoginPIVirtualAppliance.git /loginvsi/update  || (echo "Failed to clone repository, make sure the appliance can access githubber" && exit 1)
+mount -o loop /tmp/$latest /mnt/cdrom
+
+cp -rf /mnt/cdrom/update/ .
 chmod +x /loginvsi/update/update
-/loginvsi/update/update
+/loginvsi/update/update offline
+umount /mnt/cdrom

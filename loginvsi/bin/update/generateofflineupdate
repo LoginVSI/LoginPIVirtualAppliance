@@ -4,6 +4,9 @@ uploadpath="$2"
 username="$3"
 password="$4"
 domain="$5"
+hostingrepo="$6"
+varepo="$7"
+
 if [ -z $share ]; then
         read -rep "Please provide the sharename (e.g. \\\\server\\share, don't include subfolder): " share
         read -rep "Please provide subfolder of share to upload the iso to (in linux format using / ): " uploadpath
@@ -17,12 +20,17 @@ fi
 if [ -z $domain ]; then
         read -rep "Please provide domainname for $username: " domain
 fi 
-
+if [ -z $hostingrepo ]; then
+        read -rep "Please provide hosting repo url: " hostingrepo
+fi
+if [ -z $varepo ]; then
+        read -rep "Please provide appliance repo url: " varepo
+fi 
 echo "###############################################################"
 echo "#             Offline update generator                        #"
 echo "###############################################################"
 echo "$(date) Installing prereqs"
-apt-get install -y genisoimage &>/dev/null
+apt-get update && apt-get install -y genisoimage cifs-utils
 #rm -rf /tmp/awscli-bundle* 
 #curl -s "https://s3.amazonaws.com/aws-cli/awscli-bundle.zip" -o "/tmp/awscli-bundle.zip"
 #cd /tmp
@@ -58,10 +66,15 @@ tar -zcf /tmp/$version/registry_data.tar.gz docker
 rm -rf /tmp/$version/registry_data
 echo "$(date) Cloning git repos"
 cd /tmp/$version
-cat /root/.hosting | while read -r repo branch hostingfolder; do
-        git clone -q -b "$branch" "$repo" hosting;        
-done;
-git clone -q https://github.com/LoginVSI/LoginPIVirtualAppliance.git update
+
+git clone -q -b "release" "$hostingrepo" hosting;        
+git clone -q -b "release" "$varepo" /tmp/update;
+if [ -f /tmp/update/update ]; then
+        cp -rf /tmp/update update
+else
+        cp -rf /tmp/update/VirtualAppliance update         
+fi
+#git clone -q https://github.com/LoginVSI/LoginPIVirtualAppliance.git update
 
 rm -rf /tmp/$version/*/.git
 
@@ -97,6 +110,6 @@ docker rmi $(docker image ls localhost:55555/* --format "{{.Repository}}:{{.Tag}
 docker rmi $(docker image ls localhost:55555/*/* --format "{{.Repository}}:{{.Tag}}") &>/dev/null
 docker rm -f $(docker ps --filter name=update_registry -q) &>/dev/null
 docker rmi registry:2 &>/dev/null
-apt-get remove -y genisoimage &>/dev/null
+apt-get remove -y genisoimage cifs-utils &>/dev/null
 rm -rf /tmp/$version
 

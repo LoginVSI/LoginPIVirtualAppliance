@@ -10,3 +10,7 @@ do
         fi
     fi
 done
+
+if [ ! -d /loginvsi/settings ]; then        
+    mkdir -p /loginvsi/settings; 
+fi

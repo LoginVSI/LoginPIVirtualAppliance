@@ -1,171 +1,21 @@
 #!/bin/bash
-# shellcheck disable=2060,2086,2046,2034
-[[ $(echo "$1" | tr '[:upper:]' '[:lower:]') == "offline" ]] && offline=true
-[[ $(echo "$1" | tr '[:upper:]' '[:lower:]') == "internal" ]] && internal=true
-[[ $(echo "$1" | tr '[:upper:]' '[:lower:]') == "recurse" ]] && recurse=true
+#copy latest loginvsi folder
+cp -f -r update/loginvsi/* /loginvsi/
+chmod -R +x /loginvsi/bin
 
+# copy loginvsid.service and loginvsid
+cp -f update/loginvsid /usr/bin/
+cp -f update/loginvsid.service /etc/systemd/system/
 
-cd /loginvsi || (echo "Failed to find /loginvsi folder" && exit 1)
-if [ -d /loginvsi/hosting ]; then
-    rm -rf /loginvsi/hosting
-fi 
+chmod +x /usr/bin/loginvsid
+chown root:root /usr/bin/loginvsid
+systemctl disable loginvsid &>> /loginvsi/update.log
+systemctl enable loginvsid &>> /loginvsi/update.log
 
-composefilepath=$(grep "COMPOSEFILE=" < /loginvsi/.env | cut -d "=" -f2)
-if [ -n "$composefilepath" ]; then    
-        newcomposefilepath=${composefilepath//\/compose/\/hosting\/latest\/Production}
-        newenvfilepath=${newcomposefilepath//\/docker-compose.yml/\/.env}
-    else
-        # composefile entry for composefile doesn't exist yet, this can only be an InternalDB variant, since this entry was introduced before adding ExternalDB support
-        composefilepath="/loginvsi/docker-compose.yml"
-		newcomposefilepath="/loginvsi/hosting/latest/Production/InternalDB/docker-compose.yml"
-        newenvfilepath="/loginvsi/hosting/latest/Production/InternalDB/.env"
-        echo "COMPOSEFILE=/loginvsi/compose/InternalDB/docker-compose.yml" >>/loginvsi/.env  # add the entry so we know what composefile to start in the future
-    fi 
-
-# Get the hosting repo
-   
-    repo="https://github.com/LoginVSI/Hosting"               
-    if [ -z $offline ]; then 
-        if [ -n "$internal" ]; then
-            echo "Performing internal update from $2" 
-            git clone -q -b release "$2" /loginvsi/hosting || (echo "Failed to clone repository, make sure the appliance can access tfs" && exit 1)
-        else
-            curl -Lfs -m 10 https://github.com/LoginVSI/LoginPIVirtualAppliance.git &> /dev/null || (echo "Failed to connect to githudb, make sure the appliance can access github" && exit 1)
-            
-            curl -Lfs -m 10 https://index.docker.io/v1 &> /dev/null || (echo "Failed to connect to index.docker.io, make sure the appliance can access index.docker.io" && exit 1)
-            if [ -z $recurse ]; then
-                echo "Performing online update from $repo" 
-            fi
-            git clone -q -b release "$repo" /loginvsi/hosting;
-            # set apt sources list snapshot
-            #gitlogdate=$(git log --format="%ai" -n 1 /loginvsi/hosting | cut -d" " -f1 | tr -d '-') 
-        fi
-    else
-        # offline updater, copy hosting files from hosting folder on iso        
-        cp -rf /mnt/cdrom/hosting/ .
-    fi    
-    if [ -z $recurse ]; then 
-        currentversion=$(grep "Version__Number" < $composefilepath | cut -d':' -f2 | cut -d"'" -f2 | tail -1)            
-        newversion=$(grep "Version__Number" < $newcomposefilepath | cut -d':' -f2 | cut -d"'" -f2 | tail -1)
-        echo "
-########################################
-#  This appliance is going to be updated from $currentversion to $newversion          
-#  Please make sure you have a backup of the system and data before proceeding             
-#  After the update has finished please remember to update your launchers                
-########################################
-#  IMPORTANT NOTICES 
-#    3.5 
-#    The logonscript has been changed and needs to be updated in your environment
-#    3.4 
-#    After the update initial boot might take longer due to database maintenance 
-########################################"    
-        read -rep "Are you sure you want to update from $currentversion to $newversion [y/N]: " PROCEED </dev/tty
-        DEFAULT="n"
-        PROCEED="${PROCEED:-${DEFAULT}}"
-        # convert to lowercase
-        PROCEED="${PROCEED,,,}"
-    else
-        PROCEED="y"
-        echo -n "Resuming update..."
-    fi
-    
-    if [[ "${PROCEED}" == "y" ]]; then        
-        #if [ $currentversion == $newversion ]; then 
-        #    echo "This appliance is already using the latest version ($currentversion)."
-        #    exit 2
-        #fi
-        if [ -z $recurse ]; then   
-            echo -n "Updating from $currentversion to $newversion..."
-        fi
-        # copy latest compose file from hosting
-        echo "Copying hosting/latest to /loginvsi/compose" &> /loginvsi/update.log
-        
-       
-        # get the status of trusted/untrusted certs
-        currentcertsetting=$(grep SystemConfiguration__AllowUntrustedCertificates < $composefilepath | head -n1 | cut -d':' -f2 | cut -d '"' -f2)
-
-        # copy the new compose files
-		cd /loginvsi/hosting/latest/Production
-        cp -Rf . /loginvsi/compose
-		cd /loginvsi
-		
-        if [ -n "$currentcertsetting" ]; then 
-            # persist status of trusted/untrusted certs
-            if [ $currentcertsetting == "true" ]; then
-                sed -i 's,SystemConfiguration__AllowUntrustedCertificates: "false",SystemConfiguration__AllowUntrustedCertificates: "true",g' $composefilepath
-            else
-                sed -i 's,SystemConfiguration__AllowUntrustedCertificates: "true",SystemConfiguration__AllowUntrustedCertificates: "false",g' $composefilepath
-            fi
-        fi
-        # Check if any new entries in new .env and add them to the current .env
-        #for i in $(diff -y $newenvfilepath /loginvsi/.env | grep ">" | cut -d ">" -f2 | xargs); do
-        #    echo $i >> /loginvsi/.env
-        #done
-	for line in $(cat $newenvfilepath); do
-            key=$(echo $line | cut -d'=' -f1)
-            grep $key < /loginvsi/.env > /dev/null || (echo "new .env entry found: $line" && echo $line >> /loginvsi/.env)
-        done
-    fi
-
-
-if [[ "${PROCEED}" == "y" ]]; then
-    #copy latest loginvsi folder
-    cp -f -r update/loginvsi/* /loginvsi/
-    chmod -R +x /loginvsi/bin
-
-    # copy loginvsid.service and loginvsid
-    cp -f update/loginvsid /usr/bin/
-    cp -f update/loginvsid.service /etc/systemd/system/
-
-    chmod +x /usr/bin/loginvsid
-    chown root:root /usr/bin/loginvsid
-    systemctl disable loginvsid &>> /loginvsi/update.log
-    systemctl enable loginvsid &>> /loginvsi/update.log
-    # remove old docker-cleanup daemon service if it exists
-    if [ $(systemctl | grep -c docker-cleanup) -gt 0 ]; then
-        systemctl stop docker-cleanup &>>/loginvsi/update.log        
-        systemctl disable docker-cleanup &>>/loginvsi/update.log                
-    fi
-    cp -f update/docker-cleanup.service /etc/systemd/system/
-    systemctl enable docker-cleanup &>> /loginvsi/update.log
-    if [ ! -f /etc/docker/daemon.json ]; then
-        cp -f update/daemon.json /etc/docker
-    fi
-
-
-    # clean up hosting repo
-    rm -rf /loginvsi/hosting
-    
-    composefilepath=$(grep "COMPOSEFILE=" < /loginvsi/.env | cut -d "=" -f2)
-        
-    if [ -z $offline ]; then 
-        # pull the new images from dockerhub if we are online
-        base64 -d < /root/.play | docker login -u vsiplayaccount --password-stdin &>> /loginvsi/update.log
-        
-        cd ${composefilepath//docker-compose.yml/} || (echo "Failed to find ${composefilepath//docker-compose.yml/} folder" && exit 1)
-        docker-compose pull --quiet &>>/loginvsi/update.log 
-        if [ $? != 0 ]; then 
-         echo "Something went wrong during pulling of the images from docker hub, please verify this appliance can connect to index.docker.io" && exit 1
-        fi
-        #for image in $(grep image: < /loginvsi/docker-compose.yml | cut -d':' -f2,3| sort | uniq);do
-        #    docker pull $(echo $image | xargs) &>> /loginvsi/update.log
-        #done
-        #docker pull portainer &>> /loginvsi/update.log
-        docker logout &>> /loginvsi/update.log
-    else
-        # pull images from cdrom instead of online        
-        /loginvsi/bin/update/offlinedockerpull $composefilepath
-    fi
-
-    docker rm -f portainer &>> /loginvsi/update.log
-
-    /loginvsi/bin/shared/setwelcomemessage /loginvsi/.env
-    # stop identityserver to force new version nr, will get restarted by loginvsid start
-    docker service rm VSI_identityserver &>> /loginvsi/update.log
-
-    rm -rf /home/admin/.git
-
-    printf "\e[32m[DONE]\e[39m \r\n"
-    # after this script loginvsid start will be called by the update process
-fi
-
+# Relaunch the update process from the daemon as it will now have a different address (AT or PI specific)
+echo ""
+echo -n "Virtual Appliance update mechanism change detected, please restart the update..."         
+echo $repo $branch $hostingfolder > /root/.hosting            
+kill -PIPE $PPID &>/dev/null    
+exit 0    
+echo "should not see this line"      

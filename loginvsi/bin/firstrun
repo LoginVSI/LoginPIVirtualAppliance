@@ -248,7 +248,7 @@ if [ ! -f "/loginvsi/second_run.chk" ]; then
     echo "SSL_CERTIFICATE_KEY_PATH=/certificates/${fqdn}.key" >>/loginvsi/.env
     echo "SSL_CERTIFICATE_PATH=/certificates/${fqdn}.crt" >>/loginvsi/.env
     echo "GATEWAY_PORT=443" >>/loginvsi/.env
-    grep "PORTAINER_ENABLED=" < /loginvsi.env || echo "PORTAINER_ENABLED=1" >> /loginvsi/.env
+
 
 	# check if we have link & valid ip address
     netadapters=$(ip -o link show | while read -r _ dev _ _ _ _ _ _ _ _ _ _ _ _ _ _ mac _ _; do 
@@ -306,7 +306,6 @@ if [ ! -f "/loginvsi/second_run.chk" ]; then
     
     /loginvsi/bin/shared/setwelcomemessage /loginvsi/.env
     
-
     echo "#!/bin/bash
     sudo pdmenu -c -q /loginvsi/menu/pdmenurc" > /usr/bin/startmenu
     chmod +x /usr/bin/startmenu
@@ -321,11 +320,11 @@ if [ ! -f "/loginvsi/second_run.chk" ]; then
     rm -rf /home/admin/*
     rm -rf /home/admin/.bash_history
     rm -rf /root/.bash_history
-    rm -rf /root/.ssh
+    
 
 	
 trap SIGINT
-sed -i 's,PermitRootLogin yes,PermitRootLogin no,g' /etc/ssh/sshd_config
+
 sed -i 's,/usr/lib/openssh/sftp-server,internal-sftp,g' /etc/ssh/sshd_config
 chown -R admin:administrator /certificates
 reboot    

@@ -1,7 +1,12 @@
 #!/bin/bash
+latest=$(curl -s https://loginvsidata.s3-eu-west-1.amazonaws.com/LoginPI3_ISO/internal/latest.txt)
+echo "Downloading $latest"
+curl -o /tmp/$latest https://loginvsidata.s3-eu-west-1.amazonaws.com/LoginPI3_ISO/internal/$latest
+mkdir -p /mnt/cdrom
 
-read -rep "InternalUrl for virtual appliance: " applianceurl
-read -rep "InternalUrl for Hosting: " hostingurl
-git clone -b release -q $applianceurl /loginvsi/update || (echo "Failed to clone repository, make sure the appliance can access tfs, maybe made a typo?" && exit 1)
+mount -o loop /tmp/$latest /mnt/cdrom
+
+cp -rf /mnt/cdrom/update/ .
 chmod +x /loginvsi/update/update
-/loginvsi/update/update internal "$hostingurl"
+/loginvsi/update/update offline
+umount /mnt/cdrom
